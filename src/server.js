@@ -8,10 +8,23 @@ const io = socketIo(server);
 
 const port = process.env.PORT || 4000;
 
+const users = [];
+
 // on -> escuntando(receptor).
 // emit -> enviando algum dado.
 io.on('connection', (socket) => {
-    console.log(`Usuário ${socket.id} conectou`)
+    socket.on("disconnect", () => {})
+
+    socket.on("join", (name) => {
+        const user = {id: socket.id, name};
+        users.push(user);
+        io.emit("message", {name: null, message: `${name} entrou no chat`});
+        io.emit("users", users);
+    })
+
+    socket.on("message", (message) => {
+        io.emit("message", message);
+    })
 })
 
 server.listen(port, () => console.log(`servidor rodando na porta ${port}`));

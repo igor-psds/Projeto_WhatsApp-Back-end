@@ -13,7 +13,13 @@ const users = [];
 // on -> escuntando(receptor).
 // emit -> enviando algum dado.
 io.on('connection', (socket) => {
-    socket.on("disconnect", () => {})
+    socket.on("disconnect", () => {
+        const disconnectedUser = users.find(user => user.id === socket.id);
+        if (disconnectedUser) {
+            users.splice(users.indexOf(disconnectedUser), 1);
+            io.emit('users', users);
+        }
+    })
 
     socket.on("join", (name) => {
         const user = {id: socket.id, name};
@@ -24,6 +30,18 @@ io.on('connection', (socket) => {
 
     socket.on("message", (message) => {
         io.emit("message", message);
+    })
+
+    //Private messages
+    socket.on('privateMessage', ({recipientId, message}) => {
+        const sender = users.find(user => user.id === socket.id);
+        const recipient = users.find(user => user.id === recipientId);
+        if (sender && recipient) {
+            //Creates room for private messages
+            const roomName = `${sender.id}-${recipient.id}`;
+            socket.join(roomName);
+            io.to(roomName).emit('privateMessage', { sender, message});
+        }
     })
 })
 

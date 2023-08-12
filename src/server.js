@@ -25,6 +25,7 @@ io.on('connection', (socket) => {
         const user = {id: socket.id, name};
         users.push(user);
         //io.emit("message", {name: null, message: `${name} entrou no chat`});
+        console.log(user.id, user.name);
         io.emit("users", users);
     })
 
@@ -33,14 +34,15 @@ io.on('connection', (socket) => {
     })
 
     //Private messages
-    socket.on('privateMessage', ({recipientId, message}) => {
-        const sender = users.find(user => user.id === socket.id);
+    socket.on("privateMessage", ({senderName, recipientId, message}) => {
+        const sender = users.find(user => user.name === senderName);
         const recipient = users.find(user => user.id === recipientId);
         if (sender && recipient) {
             //Creates room for private messages
             const roomName = `${sender.id}-${recipient.id}`;
+            console.log('Creating room:', roomName);
             socket.join(roomName);
-            io.to(roomName).emit('privateMessage', { sender, message});
+            io.to(roomName).emit("privateMessage", { sender, recipient, message});
         }
     })
 })

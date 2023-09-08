@@ -8,18 +8,15 @@ const io = socketIo(server);
 
 const port = process.env.PORT || 4000;
 
-const users = [];
+let users = [];
+
+const messages = {
+    padrao: []
+}
 
 // on -> escuntando(receptor).
 // emit -> enviando algum dado.
 io.on('connection', (socket) => {
-    socket.on("disconnect", () => {
-        const disconnectedUser = users.find(user => user.id === socket.id);
-        if (disconnectedUser) {
-            users.splice(users.indexOf(disconnectedUser), 1);
-            io.emit('users', users);
-        }
-    })
 
     socket.on("join", (name) => {
         const user = {id: socket.id, name};
@@ -33,16 +30,41 @@ io.on('connection', (socket) => {
         io.emit("message", message);
     })
 
-    //Private messages
-    socket.on("privateMessage", ({senderName, recipientId, message}) => {
-        const sender = users.find(user => user.name === senderName);
-        const recipient = users.find(user => user.id === recipientId);
-        if (sender && recipient) {
-            //Creates room for private messages
-            const roomName = `${sender.id}-${recipient.id}`;
-            console.log('Creating room:', roomName);
-            socket.join(roomName);
-            io.to(roomName).emit("privateMessage", { sender, recipient, message});
+    socket.on("join room", (roomName, cb) => {
+        socket.join(roomName);
+        cb(messages[roomName]);
+    })
+
+    socket.on("Send Message", ({ content, to, sender, chatName, isChannel }) => {
+        if(isChannel) {
+            const payload = {
+                content,
+                chatName,
+                sender
+            };
+            socket.to(to).emit("new message", payload);
+        } else {
+            const payload = {
+                content,
+                chatName: sender,
+                sender
+            };
+            socket.to(to).emit("new message", payload);
+        }
+        if(messages[chatName]) {
+            messages[chatName].push({
+                sender,
+                content
+            });
+        }
+        
+    });
+
+    socket.on("disconnect", () => {
+        const disconnectedUser = users.find(user => user.id === socket.id);
+        if (disconnectedUser) {
+            users.splice(users.indexOf(disconnectedUser), 1);
+            io.emit('users', users);
         }
     })
 })

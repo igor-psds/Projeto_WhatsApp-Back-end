@@ -11,7 +11,7 @@ const port = process.env.PORT || 4000;
 let users = [];
 
 const messages = {
-    padrao: []
+    npp: []
 }
 
 // on -> escuntando(receptor).
